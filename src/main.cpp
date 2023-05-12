@@ -1,8 +1,12 @@
-#include <HTTPClient.h>
-#include <M5Unified.h>
+#include <rpcWiFi.h>
 #include <WiFiClientSecure.h>
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
+#include <Seeed_Arduino_FS.h>
+#define LGFX_USE_V1
+#define LGFX_AUTODETECT
+#include <HTTPClient.h>
+#include <LovyanGFX.hpp>
 
 // include WiFi / MQTT / staticmap settings
 #include "config.h"
@@ -13,8 +17,10 @@ WiFiClient wifiClient, wifiClient2;
 // PubSubClient object
 PubSubClient client(wifiClient);
 
-// Unique Chip ID for MQTT client identifier
-uint64_t chipid;
+// LovyanGFX object
+static LGFX lcd;
+
+// Unique Client ID for MQTT client identifier
 String clientID;
 
 uint8_t *imageData;
@@ -47,13 +53,13 @@ UrlInfo parseUrl(const char *url) {
 }
 
 void downloadAndDisplayImage(const char* url) {
-  M5.Log(ESP_LOG_INFO, ("Image Server Host: "+host).c_str());
-  M5.Log(ESP_LOG_INFO, ("Image Server Port: "+String(port)).c_str());
   UrlInfo lurl = parseUrl(url);
   String host = lurl.host;
   int port = lurl.port;
+  Serial.println(("Image Server Host: "+host).c_str());
+  Serial.println(("Image Server Port: "+String(port)).c_str());
   if (!wifiClient2.connect(host.c_str(), port)) {
-    M5_LOGI("Connection failed");
+    Serial.println("Connection failed");
     return;
   }
   wifiClient2.print(String("GET ") + url + " HTTP/1.0\r\n" +
@@ -63,7 +69,7 @@ void downloadAndDisplayImage(const char* url) {
   unsigned long timeout = millis();
   while (wifiClient2.available() == 0) {
     if (millis() - timeout > 5000) {
-      M5_LOGI("Timeout");
+      Serial.println("Timeout");
       wifiClient2.stop();
       return;
     }
@@ -74,7 +80,7 @@ void downloadAndDisplayImage(const char* url) {
   String line;
   while (wifiClient2.available()) {
     line = wifiClient2.readStringUntil('\n');
-    M5.Log(ESP_LOG_INFO, ("Header: "+line).c_str());
+    Serial.println(("Header: "+line).c_str());
     if (line == "\r") {
       isBody = true;
     }
@@ -93,24 +99,24 @@ void downloadAndDisplayImage(const char* url) {
 
     // タイムアウト判定
     if (millis() - lastDataTime > 5000) {
-      M5_LOGI("Timeout");
+      Serial.println("Timeout");
       wifiClient2.stop();
       break;
     }
   }
 
-  M5.Log.printf("Image downloaded. Size: %d\n", imageDataIndex);
-  M5.Display.drawJpg(imageData, imageDataIndex, 0, 0);
+  Serial.printf("Image downloaded. Size: %d\n", imageDataIndex);
+  lcd.drawJpg(imageData, imageDataIndex, 0, 0);
 }
 
 void reboot() {
-  ESP.restart();
+  NVIC_SystemReset();
 }
 
 void updateMap() {
 
   String url = String(staticmap_url) + "?center=" + lat + "," + lon + "&zoom=" + String(zoom) + "&markers="+ lat + "," + lon + "&size=" + screen_size + "&format=jpg";
-  M5.Log(ESP_LOG_INFO, url.c_str());
+  Serial.println(url.c_str());
 
   // Download the JPEG image from the URL and display it on the canvas
   downloadAndDisplayImage(url.c_str());
@@ -118,22 +124,20 @@ void updateMap() {
 }
 // Callback function when a message is received from MQTT server
 void callback(char* topic, byte* payload, unsigned int length) {
-  M5.Log.setSuffix(m5::log_target_serial, "");
-  M5_LOGI("Message arrived [");
-  M5.Log(ESP_LOG_INFO,topic);
-  M5_LOGI("] ");
-//  for (int i = 0; i < length; i++) {
-//    M5.Log(ESP_LOG_INFO,(char)payload[i]);
-//  }
-  M5.Log.setSuffix(m5::log_target_serial, "\n");
-  M5_LOGI();
+  Serial.print("Message arrived [");
+  Serial.print(topic);
+  Serial.print("] ");
+ for (int i = 0; i < length; i++) {
+   Serial.print((char)payload[i]);
+ }
+  Serial.println();
 
   // Parse the payload as JSON and get the values of lat and lon
   StaticJsonDocument<256> doc;
   deserializeJson(doc, payload, length);
   lat = String(doc["lat"].as<String>());
   lon = String(doc["lon"].as<String>());
-  M5.Log(ESP_LOG_INFO,("JSON lat: " + lat +", lon: "+ lon).c_str());
+  Serial.println("JSON lat: " + lat +", lon: "+ lon);
   // Generate the image URL using the lat and lon values
   updateMap();
 }
@@ -146,15 +150,15 @@ void reconnect() {
     Serial.print("Attempting MQTT connection...");
     // Attempt to connect
     if (client.connect(clientID.c_str(), mqtt_user, mqtt_password)) {
-      M5_LOGI("connected");
+      Serial.println("connected");
       // Once connected, subscribe to the topic
       client.subscribe(mqtt_topic);
     } else {
-      M5.Log(ESP_LOG_INFO, "failed, rc=", client.state());
+      Serial.println("failed, rc="+ client.state());
       if(count++ > 5) {
         reboot();
       }
-      M5_LOGI(" try again in 5 seconds");
+      Serial.println(" try again in 5 seconds");
       // Wait 5 seconds before retrying
       delay(5000);
     }
@@ -162,49 +166,57 @@ void reconnect() {
 }
 
 void setup() {
-  auto cfg = M5.config(); // 設定用の構造体を代入。
-  cfg.serial_baudrate = 115200;
-  M5.begin(cfg);
-  M5.Log.setLogLevel(m5::log_target_serial, ESP_LOG_INFO);
-  M5_LOGI("M5 start");
+  // ボタンのセットアップ
+  pinMode(WIO_KEY_A, INPUT_PULLUP);
+  pinMode(WIO_KEY_B, INPUT_PULLUP);
+  pinMode(WIO_KEY_C, INPUT_PULLUP);
+
+  Serial.begin(115200);
+  Serial.println("Wio start");
   imageData = (uint8_t *)malloc(BUFFERSIZE);
-  M5_LOGI("LCD start");
-  chipid = ESP.getEfuseMac(); // チップIDを取得
-  // uint64_t型のchipidを16進数の文字列に変換  
-  M5.Log.printf("ESP32 Chip ID = %016llX", chipid);
-  M5_LOGI(); 
-  uint32_t upper = chipid >> 32;
-  uint32_t lower = (uint32_t) chipid;
-  clientID = "M5Unified_" + String(upper, HEX) + String(lower, HEX);
-//  M5.Display.setRotation(1);
-//  M5.Display.setBrightness(20);
-  screen_size = String(M5.Display.width()) + "x" + String(M5.Display.height());
-  M5.Display.setTextWrap(true, true);
-  M5.Display.fillScreen(TFT_BLUE);
-  M5.Display.setTextColor(TFT_WHITE);
-  M5.Display.setFont(&fonts::Font4);
-  M5.Display.println(F("[ImadokoM5U]"));
-  M5.Display.println();
+  Serial.println("LCD start");
+  byte mac[6];
+  WiFi.macAddress(mac);
+  // MACアドレスを文字列に整形
+  String macStr;
+  for (int i = 0; i < 6; ++i) {
+    if (mac[i] < 16) {
+      macStr += "0";
+    }
+    macStr += String(mac[i], HEX);
+  }
+  clientID = "WioTerminal_" + macStr;
+  // LCDのセットアップ
+  lcd.init();
+  lcd.setRotation(1);
+  lcd.setBrightness(20);
+  screen_size = String(lcd.width()) + "x" + String(lcd.height());
+  lcd.setTextWrap(true, true);
+  lcd.fillScreen(TFT_BLUE);
+  lcd.setTextColor(TFT_WHITE);
+  lcd.setFont(&fonts::Font4);
+  lcd.println(F("[ImadokoWio]"));
+  lcd.println();
 
   // Connect to WiFi network
-  M5.Display.println();
-  M5.Display.println();
-  M5.Display.print("Connecting to ");
-  M5.Display.println(ssid);
+  lcd.println();
+  lcd.println();
+  lcd.print("Connecting to ");
+  lcd.println(ssid);
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
   int count = 0;
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
-    M5.Display.print(".");
+    lcd.print(".");
     if (count++ > 20) {
-      M5.Display.println("Failed to connect to WiFi");
+      lcd.println("Failed to connect to WiFi");
       reboot();
     }
   }
 
-  M5.Display.println("");
-  M5.Display.println("WiFi connected");
+  lcd.println("");
+  lcd.println("WiFi connected");
   
   // Set the MQTT server and callback function
   client.setServer(mqtt_server, mqtt_port);
@@ -212,24 +224,23 @@ void setup() {
 }
 
 void loop() {
-  M5.update();  
    if (!client.connected()) {
     reconnect();
    }
    client.loop();
 
-  if (M5.BtnA.wasPressed()) {
-    M5_LOGI("A Key pressed");
+  if (digitalRead(WIO_KEY_A) == LOW) {
+    Serial.println("A Key pressed");
     zoom = DEFAULT_ZOOM;
     updateMap();
   }
-   else if (M5.BtnB.wasPressed()) {
-    M5_LOGI("B Key pressed");
+   else if (digitalRead(WIO_KEY_B) == LOW) {
+    Serial.println("B Key pressed");
     zoom++;
     updateMap(); 
    }
-   else if (M5.BtnC.wasPressed()) {
-    M5_LOGI("C Key pressed");
+   else if (digitalRead(WIO_KEY_C) == LOW) {
+    Serial.println("C Key pressed");
     zoom--;
     updateMap(); 
    }
