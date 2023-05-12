@@ -1,6 +1,7 @@
 # ImadokoM5Unified
 
 [ownTracks](https://owntracks.org/)から[MQTT](https://mqtt.org/)を用いて得られる位置情報をもとに、[OpenStreetMap](https://www.openstreetmap.org/)等の地図を用いて画像を生成するPHPスクリプトである[staticmap.php](https://github.com/Piskvor/staticMapLiteExt) で生成された地図画像をダウンロードして、[M5Stack](https://m5stack.com/)シリーズの画面上に地図を表示し続けるアプリケーションです。[M5Unified](https://github.com/lovyan03/M5Unified)ライブラリを用いているので、様々なM5Stackシリーズで動作します。ビルドは[PlatformIO](https://platformio.org/)上で行っています。
+このブランチのバージョンは、[M5Stampラウンド液晶モジュール](https://ssci.to/8099)にM5Stamp C3Uを装着した状態に対応したものです。外部液晶の定義をサンプルプログラムから引用して追加しています。
 
 ## 必要なもの
 
