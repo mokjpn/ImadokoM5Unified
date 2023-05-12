@@ -3,7 +3,6 @@
 #include <WiFiClientSecure.h>
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
-#include <LCBUrl.h>
 
 // include WiFi / MQTT / staticmap settings
 #include "config.h"
@@ -26,13 +25,33 @@ int zoom = DEFAULT_ZOOM;
 String lat, lon;
 String screen_size;
 
+// URLを分解して、ホスト名とポート番号を取得する
+struct UrlInfo {
+  String host;
+  int port;
+};
+
+UrlInfo parseUrl(const char *url) {
+  String s = String(url);
+  int start = s.indexOf('/') + 2;
+  int end = s.indexOf('/', start);
+  int port = s.startsWith("https://") ? 443 : 80; // set default ports
+  int colon = s.indexOf(':', start);
+  
+  if (colon >= 0 && colon < end) {
+    // port is specified in the URL
+    port = s.substring(colon + 1, end).toInt();
+    end = colon;
+  }  
+  return {s.substring(start, end), port};
+}
+
 void downloadAndDisplayImage(const char* url) {
-  LCBUrl lurl;
-  lurl.setUrl(url);
-  String host = lurl.getHost();
-  int port = lurl.getPort();
   M5.Log(ESP_LOG_INFO, ("Image Server Host: "+host).c_str());
   M5.Log(ESP_LOG_INFO, ("Image Server Port: "+String(port)).c_str());
+  UrlInfo lurl = parseUrl(url);
+  String host = lurl.host;
+  int port = lurl.port;
   if (!wifiClient2.connect(host.c_str(), port)) {
     M5_LOGI("Connection failed");
     return;
