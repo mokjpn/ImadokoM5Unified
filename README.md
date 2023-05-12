@@ -1,6 +1,6 @@
-# ImadokoM5Unified
+# ImadokoM5Unified - Wio Terminal対応版
 
-[ownTracks](https://owntracks.org/)から[MQTT](https://mqtt.org/)を用いて得られる位置情報をもとに、[OpenStreetMap](https://www.openstreetmap.org/)等の地図を用いて画像を生成するPHPスクリプトである[staticmap.php](https://github.com/Piskvor/staticMapLiteExt) で生成された地図画像をダウンロードして、[M5Stack](https://m5stack.com/)シリーズの画面上に地図を表示し続けるアプリケーションです。[M5Unified](https://github.com/lovyan03/M5Unified)ライブラリを用いているので、様々なM5Stackシリーズで動作します。ビルドは[PlatformIO](https://platformio.org/)上で行っています。
+[ownTracks](https://owntracks.org/)から[MQTT](https://mqtt.org/)を用いて得られる位置情報をもとに、[OpenStreetMap](https://www.openstreetmap.org/)等の地図を用いて画像を生成するPHPスクリプトである[staticmap.php](https://github.com/Piskvor/staticMapLiteExt) で生成された地図画像をダウンロードして、[M5Stack](https://m5stack.com/)シリーズの画面上に地図を表示し続けるアプリケーションです。オリジナルは[M5Unified](https://github.com/lovyan03/M5Unified)ライブラリを用いているので、様々なM5Stackシリーズで動くものですが、少し修正して [Wio Terminal](https://jp.seeedstudio.com/Wio-Terminal-p-4509.html)で動くようにしたバージョンがこちらです。ビルドは[PlatformIO](https://platformio.org/)上で行っています。
 
 ## 必要なもの
 
