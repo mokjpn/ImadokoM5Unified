@@ -1,6 +1,8 @@
-# ImadokoM5Unified
+# ImadokoM5Unified (Raspberry Pi Pico W + RsPicoラウンド液晶モジュール対応版)
 
-[ownTracks](https://owntracks.org/)から[MQTT](https://mqtt.org/)を用いて得られる位置情報をもとに、[OpenStreetMap](https://www.openstreetmap.org/)等の地図を用いて画像を生成するPHPスクリプトである[staticmap.php](https://github.com/Piskvor/staticMapLiteExt) で生成された地図画像をダウンロードして、[M5Stack](https://m5stack.com/)シリーズの画面上に地図を表示し続けるアプリケーションです。[M5Unified](https://github.com/lovyan03/M5Unified)ライブラリを用いているので、様々なM5Stackシリーズで動作します。ビルドは[PlatformIO](https://platformio.org/)上で行っています。
+[ownTracks](https://owntracks.org/)から[MQTT](https://mqtt.org/)を用いて得られる位置情報をもとに、[OpenStreetMap](https://www.openstreetmap.org/)等の地図を用いて画像を生成するPHPスクリプトである[staticmap.php](https://github.com/Piskvor/staticMapLiteExt) で生成された地図画像をダウンロードして、[M5Stack](https://m5stack.com/)シリーズの画面上に地図を表示し続けるアプリケーションです。
+ビルドは[PlatformIO](https://platformio.org/)上で行っています。Pi Pico Wに対応したプラットフォーム定義はまだ正式版になっていないので、GitHubから取得するようにしています。
+このブランチのバージョンは、Raspberry Pi Pico W に[RsPicoラウンド液晶モジュール](https://ssci.to/8432) を装着したものに対応しています。
 
 ## 必要なもの
 
