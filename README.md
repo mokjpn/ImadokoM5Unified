@@ -1,8 +1,8 @@
-# ImadokoM5Unified (SeeedStudio Xiao ESP32C3 + ラウンド液晶モジュール対応版)
+# ImadokoM5Unified (SeeedStudio Xiao ESP32C3 + スクエア液晶モジュール対応版)
 
 [ownTracks](https://owntracks.org/)から[MQTT](https://mqtt.org/)を用いて得られる位置情報をもとに、[OpenStreetMap](https://www.openstreetmap.org/)等の地図を用いて画像を生成するPHPスクリプトである[staticmap.php](https://github.com/Piskvor/staticMapLiteExt) で生成された地図画像をダウンロードして、[M5Stack](https://m5stack.com/)シリーズの画面上に地図を表示し続けるアプリケーションです。
 ビルドは[PlatformIO](https://platformio.org/)上で行っています。
-このブランチのバージョンは、SeeedStudio Xiao ESP32C3 に[1.28インチラウンド液晶 with XIAO RP2040](https://www.shigezone.com/product/roundlcd1_28/) を装着したものに対応しています。
+このブランチのバージョンは、SeeedStudio Xiao ESP32C3 に[XIAOスクエア液晶モジュール](https://www.switch-science.com/products/8524) を装着したものに対応しています。
 
 ## 必要なもの
 
